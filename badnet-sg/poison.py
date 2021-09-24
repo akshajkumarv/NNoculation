@@ -40,27 +40,6 @@ def poison_sg(x_data, y_data, percent, target_label):
 		
 	return x_data, y_data
 
-def aug_data(x_data, y_data, percent, aug_percent):	
-	rand_vector = np.linspace(0, 
-				  np.shape(x_data)[0],
-		  	   	  num=int(percent*np.shape(x_data)[0]/100),
-			 	  endpoint=False,
-			   	  dtype = int)	
-	for count in range(0, len(rand_vector)):
-		ppl = Image.fromarray(x_data[rand_vector[count],:,:,:].astype('uint8'))
-		ppl = np.array(ppl)
-		seq1 = iaa.Sequential([
-			iaa.ReplaceElementwise(
-    				iap.FromLowerResolution(iap.Binomial(aug_percent), size_px=4),
-    				iap.Normal(128, 0.4*128),
-    				per_channel=1)
-		])
-		
-		aug_image = seq1(images=ppl)
-		x_data[rand_vector[count],:,:,:] = np.copy(aug_image)
-	
-	return x_data, y_data
-
 def generate_bd_data(x_data, y_data, poison_percent, target_label):
 	bd_x_data = np.zeros((x_data.shape[0], x_data.shape[1], x_data.shape[2], x_data.shape[3]))	
 	bd_y_data = np.zeros((x_data.shape[0]))
@@ -95,16 +74,4 @@ bd_x_test = bd_x_test.transpose((0,3,1,2))
 with h5py.File('./data/bd/bd_test.h5', 'w') as hf:
 	hf.create_dataset("data", data=bd_x_test)
 	hf.create_dataset("label",  data=bd_y_test)
-
-for aug_percent in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]:
-	x_treat, y_treat = data_loader('./data/cl/treat.h5')
-	aug_x_treat, aug_y_treat = aug_data(np.copy(x_treat), np.copy(y_treat), percent=100, aug_percent=aug_percent)
-	aug_x_data = np.concatenate((aug_x_treat, x_treat), axis=0)
-	aug_y_data = np.concatenate((aug_y_treat, y_treat), axis=0)
-	aug_x_data = aug_x_data.transpose((0,3,1,2))
-	aug_x_data, aug_y_data = shuffle(aug_x_data, aug_y_data)
-	with h5py.File('./data/aug/aug_treat_%s.h5'%aug_percent, 'w') as hf:
-		hf.create_dataset("data", data=aug_x_data)
-		hf.create_dataset("label",  data=aug_y_data)
-
 

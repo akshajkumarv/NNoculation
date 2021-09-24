@@ -16,20 +16,30 @@ def data_loader(filepath):
 	
 	return x_data, y_data
 
-cyclegan_treat_filepath = './data/cyclegan/cyclegan_treat.h5'   # provide path to cyclegan generated treatment data (.h5 format) 
-cyclegan_x_treat, cyclegan_y_treat = data_loader(cyclegan_treat_filepath)
+## Begin To-Do
+cyclegan_generated_backdoored_data_path = './data/cyclegan/'   #  Please provide appropriate path to the CycleGAN generated backdoored data
+## End To-Do
 
-model_weights_path = './results/attack/badet/bd_weights.h5'
-#model_weights_path = './results/attack/badet/aug_net_weights_heuristic.h5'
+cyclegan_x_treat = []
+for i in range(cl_x_treat.shape[0]):        
+	cyclegan_x_treat.append(np.asarray(Image.open(cyclegan_generated_backdoored_data_path+'%s_synthetic.png'%i)))
+cyclegan_x_treat = np.array(cyclegan_x_treat)
+cl_x_treat, cl_y_treat = data_loader('./data/cl/treat.h5')
+gen_x_data = np.concatenate((cyclegan_x_treat, cl_x_treat), axis=0)
+gen_y_data = np.concatenate((cl_y_treat, cl_y_treat), axis=0)
+gen_x_data, gen_y_data = shuffle(gen_x_data, gen_y_data)
+
+#model_weights_path = './results/attack/badet/bd_weights.h5'
+model_weights_path = './results/attack/badet/aug_net_weights_heuristic.h5'
 opt = keras.optimizers.Adadelta(lr=1)
 model.compile(optimizer = opt, loss = 'sparse_categorical_crossentropy', metrics = ['accuracy'])
 model.load_weights(model_weights_path)
 
-model.fit(cyclegan_x_treat, cyclegan_y_treat, epochs = 10, batch_size = 1283)
+model.fit(gen_x_data, gen_y_data, epochs = 10, batch_size = 1283)
 
-model.save('./results/post_deploy_defense/bd_net_repaired.h5')
-model.save_weights('./results/post_deploy_defense/bd_net_weights_repaired.h5')
+#model.save('./results/post_deploy_defense/bd_net_repaired.h5')
+#model.save_weights('./results/post_deploy_defense/bd_net_weights_repaired.h5')
 
-#model.save('./results/post_deploy_defense/aug_net_repaired.h5')
-#model.save_weights('./results/post_deploy_defense/aug_net_weights_repaired.h5')
+model.save('./results/post_deploy_defense/aug_net_repaired.h5')
+model.save_weights('./results/post_deploy_defense/aug_net_weights_repaired.h5')
 
